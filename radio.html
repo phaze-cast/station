@@ -1,0 +1,325 @@
+<!--
+    HTML PhazeCast Client Example.
+-->
+
+<html>
+    <head>
+        <script type="text/javascript">
+            const ws = new WebSocket('ws://localhost:8080');
+            const audio = new Audio();
+
+            ws.onopen = function() {
+                
+            };
+
+            ws.onmessage = function(msg) {
+                msg = JSON.parse(msg.data)
+
+                audio.src = './api/stream/' + msg.id
+                audio.play().then(() => {
+                    audio.currentTime = msg.time
+                });
+
+                console.log(msg)
+            };
+
+            let i9 = 0
+            function play(){
+                if(i9 === 0){
+                    i9 = 1
+                    fetch('./api').then(data => data.json()).then(data => {
+                        audio.src = './api/stream/' + data.id
+                        audio.play().then(() => {
+                            audio.currentTime = data.currentTime
+                        });
+                    })
+                } else{
+                    i9 = 0
+                    audio.src = ''
+                    audio.pause()
+                }
+                
+            }
+        </script>
+
+        <style>
+            body{
+                background: black;
+            }
+
+            .info{
+                position: absolute;
+                bottom: 30px;
+                left: 10px;
+                color: white;
+                z-index: 1000;
+                background: #0009;
+                padding: 10px;
+                border-radius: 12px;
+            }
+
+            .outer{
+                position: absolute;
+                bottom: 10px;
+                left: 10px;
+                z-index: 1000;
+                height: 5px;
+                width: calc(100% - 20px);
+                background: gray;
+            }
+
+            .inner{
+                height: 3px;
+                margin: 1px;
+                background: white;
+                width: 50%;
+                transition: 1s;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="info">
+            <div style="float: right; margin-left: 10px;">
+                <button onclick="play(); this.remove()">Play</button>
+                <h1 id="title"></h1>
+                <h2 id="author"></h2>
+            </div>
+        
+            <img id="img" style="float: left;" width="200px">
+        </div>
+
+        <div class="outer">
+            <div class="inner" id="bar"></div>
+        </div>
+
+        <script>
+            setInterval(function(){
+                fetch('./api')
+                .then(data => data.json())
+                .then(data2 => {
+                    fetch(data2.picture)
+                    .then(data1 => data1.json())
+                    .then(result => {
+                        document.getElementById('title').innerHTML = data2.title
+                        document.getElementById('author').innerHTML = data2.artist
+
+                        const { data, format } = result.tags.picture;
+                        let base64String = "";
+                        for (let i = 0; i < data.length; i++) {
+                            base64String += String.fromCharCode(data[i]);
+                        }
+                        document.getElementById('img').src = `data:${format};base64,${window.btoa(base64String)}`;
+
+                        document.getElementById('bar').style.width = ((audio.currentTime / data2.duration) * 100)+'%'
+                    })
+                })
+            }, 1000)
+
+            let colours = [
+                "fc0505",
+                "fc3a05",
+                "fc6c05",
+                "fc8d05",
+                "fca905",
+                "fcc605",
+                "fceb05",
+                "dbfc05",
+                "b2fc05",
+                "91fc05",
+                "68fc05",
+                "4ffc05",
+                "21fc05",
+                "05fc11",
+                "05fc3a",
+                "05fc63",
+                "05fc80", 
+                "05fca1",
+                "05fcb2",
+                "05fcd7",
+                "05fcf8",
+                "05cafc",
+                "05aefc",
+                "058dfc",
+                "0570fc",
+                "0563fc",
+                "0536fc",
+                "052efc",
+                "050dfc",
+                "2105fc",
+                "4b05fc",
+                "7005fc",
+                "8805fc",
+                "9505fc",
+                "be05fc",
+                "df05fc",
+                "fc05e3", 
+                "fc05ba",
+                "fc058d",
+                "fc0574",
+                "fc0563",
+                "fc053a",
+                "fc050d",
+                "fc0505",
+                "fc3a05",
+                "fc6c05",
+                "fc8d05",
+                "fca905",
+                "fcc605",
+                "fceb05",
+                "dbfc05",
+                "b2fc05",
+                "91fc05",
+                "68fc05",
+                "4ffc05",
+                "21fc05",
+                "05fc11",
+                "05fc3a",
+                "05fc63",
+                "05fc80", 
+                "05fca1",
+                "05fcb2",
+                "05fcd7",
+                "05fcf8",
+                "05cafc",
+                "05aefc",
+                "058dfc",
+                "0570fc",
+                "0563fc",
+                "0536fc",
+                "052efc",
+                "050dfc",
+                "2105fc",
+                "4b05fc",
+                "7005fc",
+                "8805fc",
+                "9505fc",
+                "be05fc",
+                "df05fc",
+                "fc05e3", 
+                "fc05ba",
+                "fc058d",
+                "fc0574",
+                "fc0563",
+                "fc053a",
+                "fc050d"
+            ]
+            let fftSize = getUrlParam('fftSize', '2048')
+
+            audio.id = "audio";
+            audio.controls = true;
+            audio.controlsList = "nodownload";
+            audio.crossOrigin = "anonymous";
+            audio.autoload = "auto";
+
+            let audioElement = audio;
+            let audioCtx = new AudioContext();
+            let analyser = audioCtx.createAnalyser();
+
+            analyser.fftSize = fftSize;
+            let source = audioCtx.createMediaElementSource(audioElement);
+
+            source.connect(analyser);
+            source.connect(audioCtx.destination);
+
+            let data = new Uint8Array(analyser.frequencyBinCount);
+            requestAnimationFrame(loopingFunction);
+
+            function loopingFunction(){
+                requestAnimationFrame(loopingFunction);
+                analyser.getByteFrequencyData(data);
+                draw(data);
+            }
+
+            let rotate = 0
+            let i1 = 0
+            let i3 = 0
+            function draw(data){
+                data = [...data];
+                i1 = i1 + (average(data) / 1000)
+                i3 = i3 + (average(data) / 100)
+                console.log(i1, i4)
+                if(i1 >= (colours.length / 2))i1 = 0
+                
+                makeCirle2('circle2', 0, data, i1)
+                makeCirle2('circle21', 100, data, i1)
+                makeCirle2('circle22', 200, data, i1)
+                makeCirle2('circle23', 300, data, i1)
+                makeCirle2('circle24', 400, data, i1)
+                makeCirle2('circle25', 500, data, i1)
+                makeCirle2('circle26', 600, data, i1)
+                makeCirle2('circle27', 700, data, i1)
+                makeCirle2('circle28', 800, data, i1)
+                makeCirle2('circle29', 900, data, i1)
+                makeCirle2('circle213', 1000, data, i1)
+                makeCirle2('circle223', 1100, data, i1)
+                makeCirle2('circle233', 1200, data, i1)
+                makeCirle2('circle243', 1300, data, i1)
+                makeCirle2('circle253', 1400, data, i1)
+                makeCirle2('circle263', 1500, data, i1)
+                makeCirle2('circle273', 1600, data, i1)
+                makeCirle2('circle283', 1700, data, i1)
+                makeCirle2('circle293', 1800, data, i1)
+            }
+
+            audioElement.onplay = () =>{
+                audioCtx.resume();
+            }
+
+            function getUrlParam(parameter, defaultValue) {
+                const urlParams = new URLSearchParams(window.location.search);
+                return urlParams.get(parameter) || defaultValue;
+            }
+
+            function average(arr){
+                let num = 0
+
+                arr.forEach(num1 => {
+                    num = num + num1
+                })
+
+                num = num / arr.length
+
+                return num
+            }
+
+            let i4 = 0
+            function makeCirle2(id, amount, data, i1){
+                if(document.getElementById(id)){
+                    document.getElementById(id).remove()
+                }
+                let circle1 = document.createElement('div');
+
+                if(i4 > 19)i4 = 0
+
+                circle1.style.borderRadius = '50%'
+                circle1.style.border = '10px solid #' + colours[Math.round(i1 + i4)]
+                circle1.style.position = 'fixed'
+                circle1.style.top = '50%'
+                circle1.style.left = '50%'
+                circle1.style.transform = 'translate(-50%, -50%)'
+                circle1.style.padding = (average(data) * (amount / 90)) + 'px'
+                circle1.id = id
+
+                document.body.appendChild(circle1)
+
+                if(document.getElementById(id + '1')){
+                    document.getElementById(id + '1').remove()
+                }
+                let circle12 = document.createElement('div');
+
+                circle12.style.borderRadius = '10%'
+                circle12.style.border = '10px solid #' + colours[Math.round(i1 + i4)]
+                circle12.style.position = 'fixed'
+                circle12.style.top = '50%'
+                circle12.style.left = '50%'
+                circle12.style.transform = 'translate(-50%, -50%) rotate('+i3+'deg)'
+                circle12.style.padding = (average(data) * (amount / 90)) + 'px'
+                circle12.id = id + '1'
+
+                document.body.appendChild(circle12)
+
+                i4 = i4 + 0.1
+            }
+        </script>
+    </body>
+</html>

@@ -1,0 +1,10 @@
+{
+  "dependencies": {
+    "ejs": "^3.1.6",
+    "express": "^4.17.1",
+    "jsmediatags": "^3.9.7",
+    "mongoose": "^5.13.0",
+    "mp3-duration": "^1.1.0",
+    "ws": "^7.5.1"
+  }
+}
